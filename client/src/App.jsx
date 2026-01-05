@@ -1,49 +1,108 @@
 import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import axios from 'axios'
+import postgresLogo from '/icons8-postgres.svg';
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({ message: 'Loading...' });
+  const [host, setHost] = useState('');
+  const [port, setPort] = useState('5432');
+  const [user, setUser] = useState('');
+  const [password, setPassword] = useState('');
+  const [database, setDatabase] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [dbStatus, setDbStatus] = useState('unknown');
+
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
   const fetchData = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api');
-      console.log(response.data);
+      const response = await axios.get(`${API_BASE}/api`);
       setData(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
+      setData({ message: 'Server unavailable' });
+    }
+  };
+
+  const checkDbStatus = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/db/status`);
+      setDbStatus(res.data.available ? 'available' : 'unavailable');
+    } catch (err) {
+      setDbStatus('unavailable');
+    }
+  };
+
+  const connect = async () => {
+    setStatusMessage('Connecting...');
+    try {
+      const res = await axios.post(`${API_BASE}/db/connect`, { host, port, user, password, database });
+      setStatusMessage(res.data.message || 'Connected');
+      await checkDbStatus();
+    } catch (err) {
+      const error = err.response?.data;
+      setStatusMessage((error?.error ? `${error.error}${error.details ? `: ${error.details}` : ''}` : 'Failed to connect'));
+      await checkDbStatus();
+    }
+  };
+
+  const connectDemo = async () => {
+    setStatusMessage('Connecting to demo DB...');
+    try {
+      const res = await axios.post(`${API_BASE}/db/connect-demo`);
+      setStatusMessage(res.data.message || 'Connected to demo');
+      await checkDbStatus();
+    } catch (err) {
+      const error = err.response?.data;
+      setStatusMessage((error?.error ? `${error.error}${error.details ? `: ${error.details}` : ''}` : 'Failed to connect to demo DB'));
+      await checkDbStatus();
     }
   };
 
   useEffect(() => {
     fetchData();
+    checkDbStatus();
   }, []);
 
   return (
     <>
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <img src={postgresLogo} className="logo" alt="PostgreSQL logo" />
       </div>
+
       <h1>{data?.message}</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+      <div className="db-connector">
+        <h2>Connect to Postgres</h2>
+        <div className="field">
+          <label>Host</label>
+          <input value={host} onChange={e => setHost(e.target.value)} placeholder="localhost" />
+        </div>
+        <div className="field">
+          <label>Port</label>
+          <input value={port} onChange={e => setPort(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>User</label>
+          <input value={user} onChange={e => setUser(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Database</label>
+          <input value={database} onChange={e => setDatabase(e.target.value)} />
+        </div>
+
+        <div className="actions">
+          <button onClick={connect}>Connect</button>
+          <button onClick={connectDemo}>Use Demo DB</button>
+        </div>
+
+        <p><strong>Status:</strong> {statusMessage} ({dbStatus})</p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
