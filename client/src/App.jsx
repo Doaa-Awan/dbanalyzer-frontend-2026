@@ -11,10 +11,13 @@ function App() {
   const [user, setUser] = useState('');
   const [password, setPassword] = useState('');
   const [database, setDatabase] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
+    const [statusMessage, setStatusMessage] = useState('');
   const [dbStatus, setDbStatus] = useState('unknown');
   const [showExplorer, setShowExplorer] = useState(false);
   const [schema, setSchema] = useState([]);
+  const [activeDb, setActiveDb] = useState('postgres');
+
+
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -109,50 +112,142 @@ function App() {
     })();
   }, []);
 
-  if (showExplorer) {
-    return <DbExplorer tables={schema} onBack={() => setShowExplorer(false)} />;
-  }
-
-  return (
-    <>
-      <div>
-        <img src={postgresLogo} className="logo" alt="PostgreSQL logo" />
-      </div>
-
-      <h1>{data?.message}</h1>
-
-      <div className="db-connector">
-        <h2>Connect to Postgres</h2>
-        <div className="field">
-          <label>Host</label>
-          <input value={host} onChange={e => setHost(e.target.value)} placeholder="localhost" />
-        </div>
-        <div className="field">
-          <label>Port</label>
-          <input value={port} onChange={e => setPort(e.target.value)} />
-        </div>
-        <div className="field">
-          <label>User</label>
-          <input value={user} onChange={e => setUser(e.target.value)} />
-        </div>
-        <div className="field">
-          <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
-        </div>
-        <div className="field">
-          <label>Database</label>
-          <input value={database} onChange={e => setDatabase(e.target.value)} />
-        </div>
+  
 
         <div className="actions">
           <button onClick={connect}>Connect</button>
           <button onClick={connectDemo}>Use Demo DB</button>
         </div>
+         if (showExplorer) {
+    return <DbExplorer tables={schema} onBack={() => setShowExplorer(false)} />;
+  }
 
-        <p><strong>Status:</strong> {statusMessage} ({dbStatus})</p>
+  return (
+    <div className="login-shell">
+      <div className="login-card">
+        <header className="login-header">
+          <div className="brand">
+            <img src={postgresLogo} className="logo" alt="PostgreSQL logo" />
+            <div className="brand-text">
+              <p className="eyebrow">AI DB Explorer</p>
+              <h1>Connect your database</h1>
+              <p className="subtitle">{data?.message}</p>
+            </div>
+          </div>
+          <div className={`status-pill ${dbStatus}`}>
+            <span className="status-dot" aria-hidden="true" />
+            <span>{statusMessage || 'Ready to connect'}</span>
+            <span className="status-tag">{dbStatus}</span>
+          </div>
+        </header>
+
+        <div className="db-tabs">
+          <button
+            className={`tab ${activeDb === 'postgres' ? 'active' : ''}`}
+            onClick={() => setActiveDb('postgres')}
+            type="button"
+          >
+            PostgreSQL
+          </button>
+          <button
+            className={`tab ${activeDb === 'sqlserver' ? 'active' : ''}`}
+            onClick={() => setActiveDb('sqlserver')}
+            type="button"
+          >
+            SQL Server <span className="tab-note">Coming soon</span>
+          </button>
+        </div>
+
+        {activeDb === 'postgres' ? (
+          <div className="panel">
+            <div className="fields-grid">
+              <div className="field">
+                <label htmlFor="pg-host">Host</label>
+                <input
+                  id="pg-host"
+                  value={host}
+                  onChange={e => setHost(e.target.value)}
+                  placeholder="localhost"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="pg-port">Port</label>
+                <input id="pg-port" value={port} onChange={e => setPort(e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="pg-user">User</label>
+                <input id="pg-user" value={user} onChange={e => setUser(e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="pg-password">Password</label>
+                <input
+                  id="pg-password"
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="pg-database">Database</label>
+                <input id="pg-database" value={database} onChange={e => setDatabase(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="actions">
+              <button className="btn primary" onClick={connect} type="button">
+                Connect
+              </button>
+              <button className="btn ghost" onClick={connectDemo} type="button">
+                Use Demo DB
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="panel panel-disabled">
+            <div className="fields-grid">
+              <div className="field">
+                <label htmlFor="ms-server">Server</label>
+                <input id="ms-server" placeholder="localhost\\SQLEXPRESS" disabled />
+              </div>
+              <div className="field">
+                <label htmlFor="ms-port">Port</label>
+                <input id="ms-port" placeholder="1433" disabled />
+              </div>
+              <div className="field">
+                <label htmlFor="ms-user">User</label>
+                <input id="ms-user" placeholder="sa" disabled />
+              </div>
+              <div className="field">
+                <label htmlFor="ms-password">Password</label>
+                <input id="ms-password" type="password" placeholder="••••••••" disabled />
+              </div>
+              <div className="field">
+                <label htmlFor="ms-database">Database</label>
+                <input id="ms-database" placeholder="master" disabled />
+              </div>
+              <div className="field">
+                <label htmlFor="ms-instance">Instance (optional)</label>
+                <input id="ms-instance" placeholder="SQLEXPRESS" disabled />
+              </div>
+            </div>
+
+            <div className="notice">SQL Server connections are disabled for now.</div>
+
+            <div className="actions">
+              <button className="btn primary" type="button" disabled>
+                Connect
+              </button>
+              <button className="btn ghost" type="button" disabled>
+                Use Demo DB
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   )
 }
+
+   
 
 export default App
